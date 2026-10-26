@@ -96,3 +96,18 @@ accountDialog?.addEventListener('click', e => { if (e.target === accountDialog) 
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && accountDialog && !accountDialog.hidden) closeAccountDialog(); });
 
 renderAll();
+
+// Firebase initialization
+const firebaseConfig = {
+  apiKey: "AIzaSyCveifhaGa5BCfbnwMclSooDdmqnreS6w8",
+  authDomain: "daily-planner-app-84d29.firebaseapp.com",
+  projectId: "daily-planner-app-84d29",
+  storageBucket: "daily-planner-app-84d29.firebasestorage.app",
+  messagingSenderId: "903789534564",
+  appId: "1:903789534564:web:b5d4d9142300a7f175ee71"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
