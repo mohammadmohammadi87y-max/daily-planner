@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080e20">
+  <title>Daily Planner | برنامه‌ریزی روزانه</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.9.1/fonts/remixicon.css">
+
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#">
+        <span class="brand-icon"><i class="ri-calendar-check-line"></i></span>
+        <span><b>Daily <em>Planner</em></b><small>برنامه‌ریزی روزانه</small></span>
+      </a>
+
+      <nav class="main-nav">
+        <a class="nav-link active" href="#dashboard" data-page="dashboard"><i class="ri-home-5-line"></i> داشبورد</a>
+        <a class="nav-link" href="#tasks" data-page="tasks"><i class="ri-task-line"></i> کارهای امروز</a>
+        <a class="nav-link" href="#calendar" data-page="calendar"><i class="ri-calendar-2-line"></i> تقویم</a>
+        <a class="nav-link" href="#weekly-report-page" data-page="weekly-report"><i class="ri-bar-chart-box-line"></i> گزارش هفتگی</a>
+        <a class="nav-link" href="#history" data-page="history"><i class="ri-history-line"></i> آرشیو پیشرفت</a>
+        <a class="nav-link" href="#backup" data-page="backup"><i class="ri-database-2-line"></i> پشتیبان‌گیری</a>
+      </nav>
+
+      <div class="sidebar-note">
+        <i class="ri-sparkling-2-line"></i>
+        <p>موفقیت از کارهای کوچک روزانه ساخته می‌شود.</p>
+        <div class="note-art"><i class="ri-plant-line"></i></div>
+      </div>
+      <div class="sidebar-footer"><i class="ri-shield-check-line"></i> اطلاعات فقط در مرورگر شما ذخیره می‌شود.</div>
+    </aside>
+
+    <main class="main-content" id="dashboard">
+      <header class="topbar">
+        <label class="search-box">
+          <i class="ri-search-line"></i>
+          <input id="search-input" type="search" placeholder="جستجوی کارها...">
+        </label>
+        <div class="top-actions">
+          <button id="theme-toggle" class="icon-button" title="تغییر تم" aria-label="تغییر تم"><i class="ri-sun-line"></i></button>
+          <button id="account-button" class="user-pill" type="button" aria-haspopup="dialog" aria-controls="account-dialog"><span class="avatar"><i class="ri-user-3-line"></i></span><span id="account-label">حساب کاربری</span></button>
+        </div>
+      </header>
+
+      <section class="welcome-row">
+        <div>
+          <p class="eyebrow">به فضای شخصی‌ات خوش آمدی</p>
+          <h1>سلام! <span class="wave">👋</span></h1>
+          <p class="muted">امروز هم یک قدم برای رسیدن به هدفت بردار.</p>
+        </div>
+        <div class="date-chip"><i class="ri-calendar-check-line"></i><span id="today-label">امروز</span></div>
+      </section>
+
+      <section class="stats-grid">
+        <article class="stat-card main-stat">
+          <div class="stat-top"><span class="stat-icon"><i class="ri-rocket-line"></i></span><span>پیشرفت امروز</span></div>
+          <div class="stat-number" id="today-percent">۰٪</div>
+          <div class="progress-track"><div id="today-progress-bar" class="progress-fill purple-fill"></div></div>
+          <p id="today-progress-text">هنوز کاری اضافه نکرده‌ای.</p>
+        </article>
+        <article class="stat-card">
+          <span class="stat-icon green"><i class="ri-checkbox-circle-line"></i></span>
+          <p>کارهای انجام‌شده</p><strong id="done-count">۰</strong><small>از کارهای امروز</small>
+        </article>
+        <article class="stat-card">
+          <span class="stat-icon blue"><i class="ri-time-line"></i></span>
+          <p>کارهای باقی‌مانده</p><strong id="remaining-count">۰</strong><small>برای امروز</small>
+        </article>
+        <article class="stat-card">
+          <span class="stat-icon orange"><i class="ri-calendar-event-line"></i></span>
+          <p>روز استراحت</p><strong>جمعه</strong><small>در گزارش هفتگی محاسبه نمی‌شود</small>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <section class="panel tasks-panel" id="tasks">
+          <div class="panel-heading">
+            <div><span class="heading-icon"><i class="ri-list-check-3"></i></span><h2>کارهای من</h2></div>
+            <span class="live-tag"><span></span> هفته جاری</span>
+          </div>
+
+          <form id="task-form" class="task-form">
+            <input id="task-input" type="text" maxlength="100" placeholder="نام کار را وارد کنید..." required>
+            <label class="time-input"><i class="ri-time-line"></i><input id="task-time" type="time" aria-label="زمان انجام کار"></label>
+            <select id="task-category" aria-label="دسته‌بندی">
+              <option value="مطالعه">مطالعه</option>
+              <option value="ورزش">ورزش</option>
+              <option value="زبان">یادگیری زبان</option>
+              <option value="شخصی">کارهای شخصی</option>
+              <option value="پروژه">پروژه</option>
+            </select>
+            <button class="primary-button" type="submit"><i class="ri-add-line"></i> افزودن</button>
+          </form>
+
+          <div class="task-toolbar">
+            <div class="filter-tabs" role="group" aria-label="فیلتر کارها">
+              <button class="filter-btn active" type="button" data-filter="all">همه</button>
+              <button class="filter-btn" type="button" data-filter="active">باقی‌مانده</button>
+              <button class="filter-btn" type="button" data-filter="done">انجام‌شده</button>
+            </div>
+            <span class="muted small" id="task-total">۰ کار</span>
+          </div>
+
+          <div id="task-list" class="task-list"></div>
+          <div id="empty-state" class="empty-state">
+            <i class="ri-inbox-2-line"></i><b>هنوز کاری اضافه نشده</b><span>اولین کار امروزت را وارد کن.</span>
+          </div>
+          <div class="panel-bottom">
+            <button id="clear-completed" class="text-button" type="button"><i class="ri-delete-bin-line"></i> پاک‌کردن کارهای انجام‌شده امروز</button>
+            <span class="muted small"><i class="ri-save-line"></i> ذخیره خودکار</span>
+          </div>
+        </section>
+
+        <aside class="right-column">
+          <section class="panel calendar-panel" id="calendar">
+            <div class="panel-heading"><div><span class="heading-icon"><i class="ri-calendar-2-line"></i></span><h2>تقویم این هفته</h2></div></div>
+            <p class="muted small">نمایش روزهای هفته بر اساس تقویم میلادی دستگاه</p>
+            <div class="week-calendar" id="week-calendar"></div>
+            <div class="calendar-legend"><span><i class="legend-dot green-dot"></i> امروز</span><span><i class="legend-dot gray-dot"></i> جمعه، استراحت</span></div>
+          </section>
+
+
+        </aside>
+      </section>
+
+      <footer class="page-footer"><i class="ri-lock-line"></i> اطلاعات این برنامه فقط در همین مرورگر ذخیره می‌شود.</footer>
+    </main>
+
+    <main class="main-content extra-page" id="tasks-page" data-extra-page="tasks">
+      <header class="topbar"><div><p class="eyebrow">برنامه امروز</p><h1>کارهای امروزی</h1><p class="muted">فهرست کارهایت در این صفحه نیز در دسترس است.</p></div><div class="top-actions"><button class="icon-button" type="button" data-theme-button title="تغییر تم"><i class="ri-sun-line"></i></button></div></header>
+      <section class="panel tasks-copy-panel"><div class="panel-heading"><div><span class="heading-icon"><i class="ri-list-check-3"></i></span><h2>کارهای من</h2></div><span class="live-tag"><span></span> امروز</span></div><p class="muted">برای افزودن یا تکمیل کارها از بخش «کارهای من» در داشبورد استفاده کن؛ فهرست اینجا همواره با آن همگام می‌ماند.</p><div id="tasks-page-list" class="task-list"></div></section>
+      <footer class="page-footer"><i class="ri-save-line"></i> تغییرات کارها در داشبورد و این صفحه مشترک است.</footer>
+    </main>
+
+    <main class="main-content extra-page" id="calendar-page" data-extra-page="calendar">
+      <header class="topbar"><div><p class="eyebrow">برنامه ماهانه</p><h1>تقویم</h1><p class="muted">یک نمای کامل از ماه و کارهای ثبت‌شده.</p></div><div class="top-actions"><button class="icon-button" type="button" data-theme-button title="تغییر تم"><i class="ri-sun-line"></i></button></div></header>
+      <section class="panel month-calendar-panel"><div class="month-calendar-heading"><button id="calendar-prev" class="icon-button" type="button" aria-label="ماه قبل"><i class="ri-arrow-right-s-line"></i></button><h2 id="calendar-month-title"></h2><button id="calendar-next" class="icon-button" type="button" aria-label="ماه بعد"><i class="ri-arrow-left-s-line"></i></button></div><div class="month-calendar-grid" id="month-calendar-grid"></div><div id="selected-date-tasks" class="selected-date-tasks"><p class="muted">برای دیدن کارهای یک روز، روی تاریخ آن کلیک کن.</p></div></section>
+    </main>
+
+    <main class="main-content extra-page" id="weekly-report-page" data-extra-page="weekly-report">
+      <header class="topbar"><div><p class="eyebrow">آمار هفتگی</p><h1>گزارش پیشرفت هفتگی</h1><p class="muted">هر کار جداگانه · شنبه تا پنج‌شنبه</p></div><div class="top-actions"><button class="icon-button" type="button" data-theme-button title="تغییر تم"><i class="ri-sun-line"></i></button></div></header>
+      <section class="panel weekly-panel"><div class="panel-heading"><div><span class="heading-icon"><i class="ri-bar-chart-grouped-line"></i></span><h2>پیشرفت کارها</h2></div></div><div id="weekly-report-list" class="weekly-report-list"></div><div class="report-legend"><span><i class="legend-dot green-dot"></i> انجام شد</span><span><i class="legend-dot red-dot"></i> انجام نشد</span><span><i class="legend-dot gray-dot"></i> هنوز نرسیده</span></div><p class="report-footnote"><i class="ri-information-line"></i> جمعه روز استراحت است و در درصد حساب نمی‌شود. روز جاری تا پایان روز ناموفق ثبت نمی‌شود.</p></section>
+    </main>
+
+    <main class="main-content extra-page" id="history-page" data-extra-page="history">
+      <header class="topbar"><div><p class="eyebrow">آمار و سوابق</p><h1>آرشیو پیشرفت</h1><p class="muted">گزارش روزها، هفته‌ها و ماه‌های گذشته</p></div><div class="top-actions"><button class="icon-button" type="button" data-theme-button title="تغییر تم"><i class="ri-sun-line"></i></button></div></header>
+      <section class="panel history-controls">
+        <div class="panel-heading"><div><span class="heading-icon"><i class="ri-calendar-search-line"></i></span><h2>انتخاب بازه</h2></div></div>
+        <div class="history-filter-row"><label>نوع گزارش<select id="history-period"><option value="week">هفتگی</option><option value="month" selected>ماهانه</option><option value="year">سالانه</option></select></label><label id="history-date-label">ماه<select id="history-month"></select></label><label>سال<select id="history-year"></select></label><button class="primary-button" id="history-show" type="button"><i class="ri-search-line"></i> نمایش گزارش</button></div>
+      </section>
+      <section class="stats-grid history-stats"><article class="stat-card main-stat"><div class="stat-top"><span class="stat-icon"><i class="ri-trophy-line"></i></span><span>درصد انجام کارها</span></div><div class="stat-number" id="history-percent">۰٪</div><div class="progress-track"><div id="history-progress" class="progress-fill purple-fill"></div></div><p id="history-summary">بازه موردنظر را انتخاب کن.</p></article><article class="stat-card"><span class="stat-icon green"><i class="ri-checkbox-circle-line"></i></span><p>ثبت‌های انجام‌شده</p><strong id="history-done">۰</strong><small>روزهای موفق</small></article><article class="stat-card"><span class="stat-icon blue"><i class="ri-calendar-line"></i></span><p>روزهای بررسی‌شده</p><strong id="history-days">۰</strong><small>به‌جز جمعه‌ها</small></article><article class="stat-card"><span class="stat-icon orange"><i class="ri-list-check-3"></i></span><p>کارهای ثبت‌شده</p><strong id="history-tasks">۰</strong><small>شامل کارهای آرشیوشده</small></article></section>
+      <section class="panel"><div class="panel-heading"><div><span class="heading-icon"><i class="ri-bar-chart-grouped-line"></i></span><h2 id="history-detail-title">جزئیات گزارش</h2></div></div><div id="history-details" class="history-details"></div></section>
+      <footer class="page-footer"><i class="ri-information-line"></i> سوابق تا وقتی داده‌های مرورگر پاک نشوند، روی همین دستگاه باقی می‌مانند.</footer>
+    </main>
+
+    <main class="main-content extra-page" id="backup-page" data-extra-page="backup">
+      <header class="topbar"><div><p class="eyebrow">امنیت اطلاعات</p><h1>پشتیبان‌گیری</h1><p class="muted">یک نسخه از کارها و سوابق خود نگه‌دار.</p></div><div class="top-actions"><button class="icon-button" type="button" data-theme-button title="تغییر تم"><i class="ri-sun-line"></i></button></div></header>
+      <section class="panel backup-panel"><div class="panel-heading"><div><span class="heading-icon"><i class="ri-shield-check-line"></i></span><h2>مدیریت نسخه پشتیبان</h2></div></div><p class="muted">نسخه پشتیبان شامل نام کارها، دسته‌بندی، زمان و تمام تاریخ‌های انجام‌شدن است. فایل را در جای امن نگه‌دار؛ برای انتقال به دستگاه دیگر هم می‌توانی همین فایل را وارد کنی.</p><div class="backup-actions"><button id="backup-export" class="primary-button" type="button"><i class="ri-download-2-line"></i> دریافت نسخه پشتیبان</button><label class="secondary-button" for="backup-file"><i class="ri-upload-2-line"></i> بازیابی از فایل</label><input id="backup-file" type="file" accept="application/json,.json" hidden></div><p id="backup-message" class="backup-message" role="status">آخرین تغییرات در مرورگر ذخیره می‌شوند؛ برای اطمینان، گاهی نسخه پشتیبان بگیر.</p></section>
+      <section class="panel backup-warning"><i class="ri-alert-line"></i><div><h2>نکته مهم</h2><p>اگر اطلاعات مرورگر را پاک کنی یا دستگاه خراب شود، اطلاعات محلی ممکن است از بین برود. فایل پشتیبان راه بازیابی آن‌هاست. هنگام بازیابی، اطلاعات فعلی با اطلاعات داخل فایل جایگزین می‌شود.</p></div></section>
+      <footer class="page-footer"><i class="ri-lock-line"></i> هیچ اطلاعاتی به سرور فرستاده نمی‌شود.</footer>
+    </main>
+  </div>
+
+  <div id="account-dialog" class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title" hidden>
+    <div class="account-dialog-card">
+      <button id="account-close" class="account-close icon-button" type="button" aria-label="بستن پنجره"><i class="ri-close-line"></i></button>
+      <span class="account-dialog-icon"><i class="ri-user-add-line"></i></span>
+      <h2 id="account-dialog-title">حساب کاربری</h2>
+      <p>برای فعال‌شدن ثبت‌نام و ورود واقعی، باید برنامه به سرویس ابری وصل شود. هنوز حسابی ساخته نمی‌شود و اطلاعات فعلی تو در همین مرورگر محفوظ است.</p>
+      <button id="account-dialog-ok" class="primary-button" type="button">متوجه شدم</button>
+    </div>
+  </div>
+</body>
+</html>
