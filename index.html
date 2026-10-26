@@ -172,14 +172,36 @@
     </main>
   </div>
 
-  <div id="account-dialog" class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title" hidden>
-    <div class="account-dialog-card">
-      <button id="account-close" class="account-close icon-button" type="button" aria-label="بستن پنجره"><i class="ri-close-line"></i></button>
-      <span class="account-dialog-icon"><i class="ri-user-add-line"></i></span>
-      <h2 id="account-dialog-title">حساب کاربری</h2>
-      <p>برای فعال‌شدن ثبت‌نام و ورود واقعی، باید برنامه به سرویس ابری وصل شود. هنوز حسابی ساخته نمی‌شود و اطلاعات فعلی تو در همین مرورگر محفوظ است.</p>
-      <button id="account-dialog-ok" class="primary-button" type="button">متوجه شدم</button>
+ <div id="account-dialog" class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title" hidden>
+  <div class="account-dialog-card">
+    <button id="account-close" class="account-close icon-button" type="button" aria-label="بستن پنجره">
+      <i class="ri-close-line"></i>
+    </button>
+
+    <span class="account-dialog-icon">
+      <i class="ri-user-add-line"></i>
+    </span>
+
+    <h2 id="account-dialog-title">حساب کاربری</h2>
+
+    <div class="account-tabs">
+      <button id="show-login" class="primary-button" type="button">ورود</button>
+      <button id="show-register" class="secondary-button" type="button">ثبت‌نام</button>
     </div>
+
+    <form id="account-form">
+      <label for="account-email">ایمیل</label>
+      <input id="account-email" type="email" placeholder="ایمیل خود را وارد کن" required autocomplete="email">
+
+      <label for="account-password">رمز عبور</label>
+      <input id="account-password" type="password" placeholder="حداقل ۶ حرف" minlength="6" required autocomplete="current-password">
+
+      <button id="account-submit" class="primary-button" type="submit">ورود</button>
+      <p id="account-message" role="status"></p>
+    </form>
+
+    <button id="account-logout" class="secondary-button" type="button" hidden>خروج از حساب</button>
   </div>
+</div>
 </body>
 </html>
