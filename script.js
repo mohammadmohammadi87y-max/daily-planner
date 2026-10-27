@@ -20,7 +20,14 @@ function readTasks() {
 }
 let tasks=readTasks(), currentFilter='all', selectedCalendarDate=new Date(), calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 const taskForm=$('#task-form'), taskInput=$('#task-input'), taskTime=$('#task-time'), taskCategory=$('#task-category'), taskList=$('#task-list'), searchInput=$('#search-input');
-function saveTasks(){ try { localStorage.setItem('daily-planner-tasks-v2',JSON.stringify(tasks)); } catch { alert('ذخیره‌سازی مرورگر در دسترس نیست.'); } }
+function saveTasks(){
+  try {
+    localStorage.setItem('daily-planner-tasks-v2', JSON.stringify(tasks));
+  } catch {
+    alert('ذخیره‌سازی مرورگر در دسترس نیست.');
+  }
+  saveCloudData();
+}
 function isCompleted(task,date){ return (task.completedDates||[]).includes(dateKey(date)); }
 function setCompleted(task,date,done){ const key=dateKey(date); task.completedDates=(task.completedDates||[]).filter(d=>d!==key); if(done)task.completedDates.push(key); saveTasks(); renderAll(); }
 function activeTasks(){ return tasks.filter(t=>!t.archived); }
@@ -74,30 +81,7 @@ function renderHistory(){if(!historyPage)return;const {start,end,title}=getHisto
 function updateBackupMessage(message){const node=$('#backup-message');if(node)node.textContent=message;}
 $('#backup-export').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({app:'Daily Planner',version:1,exportedAt:new Date().toISOString(),tasks},null,2)],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`daily-planner-backup-${dateKey(new Date())}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);updateBackupMessage('نسخه پشتیبان دانلود شد. فایل را در جای امن نگه‌دار.');});
 $('#backup-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text()),incoming=Array.isArray(data)?data:data.tasks;const valid=Array.isArray(incoming)&&incoming.every(t=>t&&typeof t.id==='string'&&typeof t.name==='string'&&typeof t.createdAt==='string'&&Array.isArray(t.completedDates));if(!valid)throw Error('invalid');if(!confirm('اطلاعات فعلی با اطلاعات داخل نسخه پشتیبان جایگزین شود؟'))return;tasks=incoming.map(t=>({...t,time:t.time||'',category:t.category||'شخصی',archived:!!t.archived,completedDates:[...new Set(t.completedDates.filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)))]}));saveTasks();renderAll();renderHistory();updateBackupMessage(`بازیابی موفق بود؛ ${faDigits(tasks.length)} کار و سوابق آن وارد شد.`);}catch{updateBackupMessage('این فایل نسخه پشتیبان معتبر نیست. فایل JSON برنامه را انتخاب کن.');}finally{e.target.value='';}});
-// Account button: honest setup notice until real cloud authentication is configured.
-const accountButton = $('#account-button');
-const accountDialog = $('#account-dialog');
-const accountClose = $('#account-close');
-const accountOk = $('#account-dialog-ok');
-function openAccountDialog() {
-  if (!accountDialog) return;
-  accountDialog.hidden = false;
-  accountClose?.focus();
-}
-function closeAccountDialog() {
-  if (!accountDialog) return;
-  accountDialog.hidden = true;
-  accountButton?.focus();
-}
-accountButton?.addEventListener('click', openAccountDialog);
-accountClose?.addEventListener('click', closeAccountDialog);
-accountOk?.addEventListener('click', closeAccountDialog);
-accountDialog?.addEventListener('click', e => { if (e.target === accountDialog) closeAccountDialog(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && accountDialog && !accountDialog.hidden) closeAccountDialog(); });
-
-renderAll();
-
-// Firebase initialization
+// Firebase + account authentication and per-user cloud sync
 const firebaseConfig = {
   apiKey: "AIzaSyCveifhaGa5BCfbnwMclSooDdmqnreS6w8",
   authDomain: "daily-planner-app-84d29.firebaseapp.com",
@@ -107,7 +91,238 @@ const firebaseConfig = {
   appId: "1:903789534564:web:b5d4d9142300a7f175ee71"
 };
 
-firebase.initializeApp(firebaseConfig);
-
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+const accountButton = $('#account-button');
+const accountDialog = $('#account-dialog');
+const accountClose = $('#account-close');
+const accountForm = $('#account-form');
+const accountEmail = $('#account-email');
+const accountPassword = $('#account-password');
+const accountSubmit = $('#account-submit');
+const accountMessage = $('#account-message');
+const accountLabel = $('#account-label');
+const showLogin = $('#show-login');
+const showRegister = $('#show-register');
+const accountLogout = $('#account-logout');
+
+let accountMode = 'login';
+let currentUser = null;
+let cloudReady = false;
+let applyingCloudData = false;
+let cloudSaveTimer = null;
+let unsubscribeCloud = null;
+let cloudLoadToken = 0;
+
+function showAccountMessage(message, isError = false) {
+  if (!accountMessage) return;
+  accountMessage.textContent = message;
+  accountMessage.style.color = isError ? 'var(--red, #ff526a)' : '';
+}
+
+function setAccountMode(mode) {
+  accountMode = mode;
+  if (accountSubmit) accountSubmit.textContent = mode === 'login' ? 'ورود' : 'ثبت‌نام';
+  if (showLogin) showLogin.className = mode === 'login' ? 'primary-button' : 'secondary-button';
+  if (showRegister) showRegister.className = mode === 'register' ? 'primary-button' : 'secondary-button';
+  if (accountPassword) accountPassword.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+  showAccountMessage('');
+}
+
+function openAccountDialog() {
+  if (!accountDialog) return;
+  accountDialog.hidden = false;
+  accountClose?.focus();
+  if (currentUser) showAccountMessage(`وارد شده‌ای: ${currentUser.email || ''}`);
+}
+
+function closeAccountDialog() {
+  if (!accountDialog) return;
+  accountDialog.hidden = true;
+  accountButton?.focus();
+}
+
+function updateAccountUI(user) {
+  currentUser = user || null;
+  if (accountLabel) accountLabel.textContent = user ? (user.email || 'حساب کاربری') : 'حساب کاربری';
+  if (accountForm) accountForm.hidden = !!user;
+  if (accountLogout) accountLogout.hidden = !user;
+  if (!user) {
+    showAccountMessage('');
+    setAccountMode('login');
+  } else {
+    showAccountMessage(`وارد شده‌ای: ${user.email || ''}`);
+  }
+}
+
+function accountErrorMessage(error) {
+  const code = error?.code || '';
+  const messages = {
+    'auth/email-already-in-use': 'این ایمیل قبلاً ثبت‌نام شده است.',
+    'auth/invalid-email': 'ایمیل معتبر نیست.',
+    'auth/weak-password': 'رمز عبور باید حداقل ۶ حرف باشد.',
+    'auth/invalid-credential': 'ایمیل یا رمز عبور اشتباه است.',
+    'auth/user-not-found': 'این حساب پیدا نشد.',
+    'auth/wrong-password': 'رمز عبور اشتباه است.',
+    'auth/network-request-failed': 'اتصال اینترنت را بررسی کن.',
+    'auth/too-many-requests': 'تلاش‌های زیاد؛ کمی بعد دوباره امتحان کن.',
+    'permission-denied': 'دسترسی ابری مجاز نیست؛ قوانین Firestore را بررسی کن.'
+  };
+  return messages[code] || 'عملیات انجام نشد. اتصال اینترنت و تنظیمات Firebase را بررسی کن.';
+}
+
+function normalizeCloudTasks(items) {
+  if (!Array.isArray(items)) return [];
+  return items
+    .filter(t => t && typeof t.id === 'string' && typeof t.name === 'string'
+      && Array.isArray(t.completedDates) && typeof t.createdAt === 'string')
+    .map(t => ({
+      ...t,
+      time: t.time || '',
+      category: t.category || 'شخصی',
+      archived: !!t.archived,
+      completedDates: [...new Set(t.completedDates.filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)))]
+    }));
+}
+
+async function loadUserCloudData(user) {
+  const token = ++cloudLoadToken;
+  const ref = db.doc(`users/${user.uid}/planner/state`);
+  const snapshot = await ref.get();
+
+  // Prevent an earlier account's slower request from overwriting the current account.
+  if (token !== cloudLoadToken || !auth.currentUser || auth.currentUser.uid !== user.uid) return;
+
+  if (snapshot.exists) {
+    tasks = normalizeCloudTasks(snapshot.data().tasks);
+  } else {
+    // First sign-in for this account: preserve and copy this browser's existing tasks.
+    tasks = normalizeCloudTasks(tasks);
+    await ref.set({
+      tasks,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
+  try {
+    localStorage.setItem('daily-planner-tasks-v2', JSON.stringify(tasks));
+  } catch {}
+
+  renderAll();
+  renderHistory();
+  cloudReady = true;
+
+  if (unsubscribeCloud) unsubscribeCloud();
+  unsubscribeCloud = ref.onSnapshot(snapshotNow => {
+    if (!snapshotNow.exists || !currentUser || currentUser.uid !== user.uid
+        || snapshotNow.metadata.hasPendingWrites) return;
+
+    const remoteTasks = normalizeCloudTasks(snapshotNow.data().tasks);
+    applyingCloudData = true;
+    tasks = remoteTasks;
+    try {
+      localStorage.setItem('daily-planner-tasks-v2', JSON.stringify(tasks));
+    } catch {}
+    renderAll();
+    renderHistory();
+    applyingCloudData = false;
+  }, error => {
+    applyingCloudData = false;
+    showAccountMessage(accountErrorMessage(error), true);
+  });
+}
+
+function saveCloudData() {
+  if (!currentUser || !cloudReady || applyingCloudData) return;
+  clearTimeout(cloudSaveTimer);
+
+  const uid = currentUser.uid;
+  const tasksToSave = normalizeCloudTasks(tasks);
+
+  cloudSaveTimer = setTimeout(async () => {
+    if (!currentUser || currentUser.uid !== uid || !cloudReady || applyingCloudData) return;
+    try {
+      await db.doc(`users/${uid}/planner/state`).set({
+        tasks: tasksToSave,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (error) {
+      showAccountMessage(accountErrorMessage(error), true);
+    }
+  }, 450);
+}
+
+accountButton?.addEventListener('click', openAccountDialog);
+accountClose?.addEventListener('click', closeAccountDialog);
+accountDialog?.addEventListener('click', event => {
+  if (event.target === accountDialog) closeAccountDialog();
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && accountDialog && !accountDialog.hidden) closeAccountDialog();
+});
+
+showLogin?.addEventListener('click', () => setAccountMode('login'));
+showRegister?.addEventListener('click', () => setAccountMode('register'));
+
+accountForm?.addEventListener('submit', async event => {
+  event.preventDefault();
+  const email = accountEmail?.value.trim() || '';
+  const password = accountPassword?.value || '';
+
+  if (!email || password.length < 6) {
+    showAccountMessage('ایمیل و رمز عبور حداقل ۶ حرفی را وارد کن.', true);
+    return;
+  }
+
+  if (accountSubmit) accountSubmit.disabled = true;
+  showAccountMessage('لطفاً صبر کن...');
+
+  try {
+    if (accountMode === 'register') {
+      await auth.createUserWithEmailAndPassword(email, password);
+    } else {
+      await auth.signInWithEmailAndPassword(email, password);
+    }
+    showAccountMessage('ورود موفق بود؛ اطلاعات در حال بارگذاری است.');
+  } catch (error) {
+    showAccountMessage(accountErrorMessage(error), true);
+  } finally {
+    if (accountSubmit) accountSubmit.disabled = false;
+  }
+});
+
+accountLogout?.addEventListener('click', async () => {
+  try {
+    cloudReady = false;
+    cloudLoadToken++;
+    clearTimeout(cloudSaveTimer);
+    if (unsubscribeCloud) unsubscribeCloud();
+    unsubscribeCloud = null;
+    await auth.signOut();
+    closeAccountDialog();
+  } catch (error) {
+    showAccountMessage(accountErrorMessage(error), true);
+  }
+});
+
+auth.onAuthStateChanged(async user => {
+  cloudReady = false;
+  cloudLoadToken++;
+  clearTimeout(cloudSaveTimer);
+  if (unsubscribeCloud) unsubscribeCloud();
+  unsubscribeCloud = null;
+
+  updateAccountUI(user);
+  if (!user) return;
+
+  try {
+    await loadUserCloudData(user);
+    if (currentUser?.uid === user.uid) showAccountMessage('حساب متصل است و اطلاعات همگام‌سازی شد.');
+  } catch (error) {
+    showAccountMessage(accountErrorMessage(error), true);
+  }
+});
+
+renderAll();
