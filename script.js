@@ -107,6 +107,19 @@ const accountLabel = $('#account-label');
 const showLogin = $('#show-login');
 const showRegister = $('#show-register');
 const accountLogout = $('#account-logout');
+const confirmPassword = $('#account-confirm-password');
+const confirmWrap = $('#register-confirm-wrap');
+const forgotPassword = $('#forgot-password');
+const authView = $('#auth-view');
+const accountManagement = $('#account-management');
+const accountManagementActions = $('#account-management-actions');
+const settingsBack = $('#account-settings-back');
+const settingsTitle = $('#account-settings-title');
+const settingsPanel = $('#account-settings-panel');
+const settingsFields = $('#account-settings-fields');
+const settingsForm = $('#account-settings-form');
+const managementMessage = $('#account-message-management');
+const currentEmailLabel = $('#account-current-email');
 
 let accountMode = 'login';
 let currentUser = null;
@@ -128,32 +141,69 @@ function setAccountMode(mode) {
   if (showLogin) showLogin.className = mode === 'login' ? 'primary-button' : 'secondary-button';
   if (showRegister) showRegister.className = mode === 'register' ? 'primary-button' : 'secondary-button';
   if (accountPassword) accountPassword.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+  if (confirmWrap) confirmWrap.hidden = mode !== 'register';
+  if (confirmPassword) confirmPassword.required = mode === 'register';
+  if (forgotPassword) forgotPassword.hidden = mode !== 'login';
   showAccountMessage('');
+}
+
+function positionAccountMenu() {
+  if (!accountDialog || !accountDialog.classList.contains('is-account-menu')) return;
+  const rect = accountButton.getBoundingClientRect();
+  const card = accountDialog.querySelector('.account-dialog-card');
+  const width = Math.min(320, window.innerWidth - 24);
+  card.style.width = `${width}px`;
+  const left = Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12));
+  card.style.left = `${left}px`;
+  card.style.top = `${Math.min(rect.bottom + 10, window.innerHeight - card.offsetHeight - 12)}px`;
 }
 
 function openAccountDialog() {
   if (!accountDialog) return;
   accountDialog.hidden = false;
-  accountClose?.focus();
-  if (currentUser) showAccountMessage(`وارد شده‌ای: ${currentUser.email || ''}`);
+  accountDialog.classList.toggle('is-account-menu', !!currentUser);
+  if (currentUser) {
+    authView.hidden = true;
+    accountManagement.hidden = false;
+    currentEmailLabel.textContent = currentUser.email || '';
+    accountClose.hidden = false;
+    positionAccountMenu();
+  } else {
+    const card = accountDialog.querySelector('.account-dialog-card');
+    card?.style.removeProperty('width');
+    card?.style.removeProperty('left');
+    card?.style.removeProperty('top');
+    accountClose.hidden = false;
+    accountClose?.focus();
+  }
 }
 
 function closeAccountDialog() {
   if (!accountDialog) return;
   accountDialog.hidden = true;
+  accountDialog.classList.remove('is-account-menu');
+  accountClose.hidden = false;
+  const card = accountDialog.querySelector('.account-dialog-card');
+  card?.style.removeProperty('width'); card?.style.removeProperty('left'); card?.style.removeProperty('top');
   accountButton?.focus();
 }
 
 function updateAccountUI(user) {
   currentUser = user || null;
-  if (accountLabel) accountLabel.textContent = user ? (user.email || 'حساب کاربری') : 'حساب کاربری';
+  if (accountLabel) accountLabel.textContent = user ? ((user.email || 'حساب کاربری').split('@')[0].slice(0, 7) + '…') : 'حساب کاربری';
+  if (authView) authView.hidden = !!user;
+  if (accountManagement) accountManagement.hidden = !user;
   if (accountForm) accountForm.hidden = !!user;
   if (accountLogout) accountLogout.hidden = !user;
+  if (currentEmailLabel) currentEmailLabel.textContent = user?.email || '';
   if (!user) {
     showAccountMessage('');
     setAccountMode('login');
   } else {
-    showAccountMessage(`وارد شده‌ای: ${user.email || ''}`);
+    showAccountMessage('');
+    if (settingsPanel) settingsPanel.hidden = true;
+    if (accountManagementActions) accountManagementActions.hidden = false;
+    if (currentEmailLabel) currentEmailLabel.hidden = false;
   }
 }
 
@@ -254,11 +304,17 @@ function saveCloudData() {
   }, 450);
 }
 
-accountButton?.addEventListener('click', openAccountDialog);
+accountButton?.addEventListener('click', event => { event.stopPropagation(); if (!accountDialog.hidden) closeAccountDialog(); else openAccountDialog(); });
 accountClose?.addEventListener('click', closeAccountDialog);
 accountDialog?.addEventListener('click', event => {
-  if (event.target === accountDialog) closeAccountDialog();
+  if (!accountDialog.classList.contains('is-account-menu') && event.target === accountDialog) closeAccountDialog();
 });
+document.addEventListener('click', event => {
+  if (!accountDialog || accountDialog.hidden || !accountDialog.classList.contains('is-account-menu')) return;
+  if (!accountDialog.contains(event.target) && !accountButton?.contains(event.target)) closeAccountDialog();
+});
+window.addEventListener('resize', positionAccountMenu);
+window.addEventListener('scroll', positionAccountMenu, true);
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && accountDialog && !accountDialog.hidden) closeAccountDialog();
 });
@@ -270,7 +326,9 @@ accountForm?.addEventListener('submit', async event => {
   event.preventDefault();
   const email = accountEmail?.value.trim() || '';
   const password = accountPassword?.value || '';
+  const confirm = confirmPassword?.value || '';
 
+  if (accountMode === 'register' && password !== confirm) { showAccountMessage('رمز عبور و تأیید آن یکسان نیستند.', true); return; }
   if (!email || password.length < 6) {
     showAccountMessage('ایمیل و رمز عبور حداقل ۶ حرفی را وارد کن.', true);
     return;
@@ -285,12 +343,77 @@ accountForm?.addEventListener('submit', async event => {
     } else {
       await auth.signInWithEmailAndPassword(email, password);
     }
+    accountForm.reset();
     showAccountMessage('ورود موفق بود؛ اطلاعات در حال بارگذاری است.');
+    closeAccountDialog();
   } catch (error) {
     showAccountMessage(accountErrorMessage(error), true);
   } finally {
     if (accountSubmit) accountSubmit.disabled = false;
   }
+});
+
+document.addEventListener('click', event => {
+  const toggle = event.target.closest('[data-toggle-password]');
+  if (!toggle) return;
+  const input = document.getElementById(toggle.dataset.togglePassword);
+  if (!input) return;
+  const visible = input.type === 'text';
+  input.type = visible ? 'password' : 'text';
+  toggle.innerHTML = visible ? '<i class="ri-eye-line"></i>' : '<i class="ri-eye-off-line"></i>';
+  toggle.setAttribute('aria-label', visible ? 'نمایش رمز' : 'مخفی‌کردن رمز');
+});
+
+$('#toggle-password')?.addEventListener('click', () => {
+  const visible = accountPassword.type === 'text';
+  accountPassword.type = visible ? 'password' : 'text';
+  $('#toggle-password').innerHTML = visible ? '<i class="ri-eye-line"></i>' : '<i class="ri-eye-off-line"></i>';
+  $('#toggle-password').setAttribute('aria-label', visible ? 'نمایش رمز' : 'مخفی‌کردن رمز');
+});
+
+forgotPassword?.addEventListener('click', async () => {
+  const email = accountEmail.value.trim();
+  if (!email) { showAccountMessage('ابتدا ایمیل ثبت‌شده را وارد کن.', true); accountEmail.focus(); return; }
+  try { await auth.sendPasswordResetEmail(email); showAccountMessage('لینک بازیابی رمز به ایمیلت ارسال شد. پس از تعیین رمز جدید، با همان ایمیل و رمز تازه وارد شو.'); }
+  catch (error) { showAccountMessage(accountErrorMessage(error), true); }
+});
+
+function showSettingsMessage(text, isError=false) { if(managementMessage){managementMessage.textContent=text;managementMessage.style.color=isError?'var(--red, #ff526a)':'';} }
+function openSettings(action) {
+  if (!currentUser) return;
+  const titles = { info: 'اطلاعات حساب', password: 'تغییر رمز عبور', email: 'تغییر ایمیل', delete: 'حذف دائمی حساب' };
+  settingsPanel.hidden = false;
+  accountManagementActions.hidden = true;
+  currentEmailLabel.hidden = true;
+  settingsFields.replaceChildren();
+  settingsForm.dataset.action = action;
+  settingsTitle.textContent = titles[action] || 'تنظیمات حساب';
+  const submitButton = settingsForm.querySelector('button[type="submit"]');
+  submitButton.textContent = action === 'delete' ? 'تأیید حذف دائمی' : 'ذخیره تغییرات';
+  const addField=(label,id,type='text',placeholder='')=>{const l=document.createElement('label');l.htmlFor=id;l.textContent=label;const i=document.createElement('input');i.id=id;i.name=id;i.type=type;i.placeholder=placeholder;i.required=true;i.autocomplete=type==='password'?'current-password':'off';if(type==='password'){const wrap=document.createElement('div');wrap.className='password-wrap settings-password-wrap';const eye=document.createElement('button');eye.type='button';eye.className='password-toggle';eye.dataset.togglePassword=id;eye.setAttribute('aria-label','نمایش رمز');eye.innerHTML='<i class="ri-eye-line"></i>';wrap.append(i,eye);settingsFields.append(l,wrap);}else settingsFields.append(l,i);return i;};
+  if(action==='info') {
+    const rows = [['ایمیل ثبت‌شده', currentUser.email || '—'], ['وضعیت حساب', currentUser.emailVerified ? 'ایمیل تأیید شده' : 'ایمیل هنوز تأیید نشده']];
+    rows.forEach(([label,value])=>{const row=document.createElement('div');row.className='account-info-row';const key=document.createElement('span');key.textContent=label;const val=document.createElement('strong');val.textContent=value;row.append(key,val);settingsFields.append(row);});
+    submitButton.hidden = true;
+  } else if(action==='password') {
+    addField('رمز فعلی','settings-current','password');addField('رمز جدید (حداقل ۶ حرف)','settings-new','password');addField('تأیید رمز جدید','settings-confirm','password');submitButton.hidden=false;
+  } else if(action==='email') {
+    addField('رمز فعلی','settings-current-email','password');addField('ایمیل جدید','settings-new-email','email');submitButton.hidden=false;
+  } else if(action==='delete') {
+    const p=document.createElement('p');p.textContent='با حذف حساب، دسترسی به حساب و اطلاعات ابری آن از بین می‌رود. این عمل قابل برگشت نیست.';settingsFields.append(p);addField('رمز فعلی','settings-delete-password','password');submitButton.hidden=false;
+  }
+  showSettingsMessage('');
+}
+document.querySelectorAll('[data-account-action]').forEach(b=>b.addEventListener('click',()=>openSettings(b.dataset.accountAction)));
+settingsBack?.addEventListener('click',()=>{settingsPanel.hidden=true;accountManagementActions.hidden=false;currentEmailLabel.hidden=false;showSettingsMessage('');});
+settingsForm?.addEventListener('submit',async e=>{
+ e.preventDefault();const action=settingsForm.dataset.action;const user=auth.currentUser;if(!user)return;
+ const get=id=>$('#'+id)?.value||'';
+ try {
+  if(action==='password') {const old=get('settings-current'),n=get('settings-new');if(n.length<6||n!==get('settings-confirm'))throw new Error('رمز جدید باید حداقل ۶ حرف باشد و با تأیید آن یکسان باشد.');await user.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(user.email,old));await user.updatePassword(n);showSettingsMessage('رمز عبور با موفقیت تغییر کرد.');}
+  else if(action==='email') {const old=get('settings-current-email'),email=get('settings-new-email').trim();if(!email || email===user.email) throw new Error('ایمیل جدید را درست وارد کن.');await user.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(user.email,old));if(typeof user.verifyBeforeUpdateEmail!=='function') throw new Error('قابلیت تأیید ایمیل در نسخه فعلی Firebase در دسترس نیست؛ ایمیل بدون تأیید تغییر داده نشد.');await user.verifyBeforeUpdateEmail(email);showSettingsMessage('لینک تأیید به ایمیل جدید فرستاده شد. پس از بازکردن لینک، ایمیل حساب تغییر می‌کند.');}
+  else if(action==='delete') {const pass=get('settings-delete-password');if(!confirm('حذف دائمی حساب و تمام داده‌های Daily Planner؟'))return;await user.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(user.email,pass));await db.doc(`users/${user.uid}/planner/state`).delete();await user.delete();tasks=[];localStorage.removeItem('daily-planner-tasks-v2');renderAll();closeAccountDialog();}
+ } catch(err) {showSettingsMessage(err.message||accountErrorMessage(err),true);}
 });
 
 accountLogout?.addEventListener('click', async () => {
