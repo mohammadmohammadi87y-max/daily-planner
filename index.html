@@ -38,7 +38,7 @@
         <p>موفقیت از کارهای کوچک روزانه ساخته می‌شود.</p>
         <div class="note-art"><i class="ri-plant-line"></i></div>
       </div>
-      <div class="sidebar-footer"><i class="ri-shield-check-line"></i> اطلاعات فقط در مرورگر شما ذخیره می‌شود.</div>
+      <div class="sidebar-footer"><i class="ri-shield-check-line"></i> با ورود به حساب، اطلاعاتت در فضای ابری همگام‌سازی می‌شود.</div>
     </aside>
 
     <main class="main-content" id="dashboard">
@@ -49,7 +49,7 @@
         </label>
         <div class="top-actions">
           <button id="theme-toggle" class="icon-button" title="تغییر تم" aria-label="تغییر تم"><i class="ri-sun-line"></i></button>
-          <button id="account-button" class="user-pill" type="button" aria-haspopup="dialog" aria-controls="account-dialog"><span class="avatar"><i class="ri-user-3-line"></i></span><span id="account-label">حساب کاربری</span></button>
+          <button id="account-button" class="user-pill" type="button" aria-haspopup="true" aria-controls="account-dialog"><span class="avatar"><i class="ri-user-3-line"></i></span><span id="account-label">حساب کاربری</span></button>
         </div>
       </header>
 
@@ -168,39 +168,45 @@
       <header class="topbar"><div><p class="eyebrow">امنیت اطلاعات</p><h1>پشتیبان‌گیری</h1><p class="muted">یک نسخه از کارها و سوابق خود نگه‌دار.</p></div><div class="top-actions"><button class="icon-button" type="button" data-theme-button title="تغییر تم"><i class="ri-sun-line"></i></button></div></header>
       <section class="panel backup-panel"><div class="panel-heading"><div><span class="heading-icon"><i class="ri-shield-check-line"></i></span><h2>مدیریت نسخه پشتیبان</h2></div></div><p class="muted">نسخه پشتیبان شامل نام کارها، دسته‌بندی، زمان و تمام تاریخ‌های انجام‌شدن است. فایل را در جای امن نگه‌دار؛ برای انتقال به دستگاه دیگر هم می‌توانی همین فایل را وارد کنی.</p><div class="backup-actions"><button id="backup-export" class="primary-button" type="button"><i class="ri-download-2-line"></i> دریافت نسخه پشتیبان</button><label class="secondary-button" for="backup-file"><i class="ri-upload-2-line"></i> بازیابی از فایل</label><input id="backup-file" type="file" accept="application/json,.json" hidden></div><p id="backup-message" class="backup-message" role="status">آخرین تغییرات در مرورگر ذخیره می‌شوند؛ برای اطمینان، گاهی نسخه پشتیبان بگیر.</p></section>
       <section class="panel backup-warning"><i class="ri-alert-line"></i><div><h2>نکته مهم</h2><p>اگر اطلاعات مرورگر را پاک کنی یا دستگاه خراب شود، اطلاعات محلی ممکن است از بین برود. فایل پشتیبان راه بازیابی آن‌هاست. هنگام بازیابی، اطلاعات فعلی با اطلاعات داخل فایل جایگزین می‌شود.</p></div></section>
-      <footer class="page-footer"><i class="ri-lock-line"></i> هیچ اطلاعاتی به سرور فرستاده نمی‌شود.</footer>
+      <footer class="page-footer"><i class="ri-lock-line"></i> با ورود به حساب، اطلاعاتت در فضای ابری همگام‌سازی می‌شود.</footer>
     </main>
   </div>
 
  <div id="account-dialog" class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title" hidden>
   <div class="account-dialog-card">
-    <button id="account-close" class="account-close icon-button" type="button" aria-label="بستن پنجره">
-      <i class="ri-close-line"></i>
-    </button>
-
-    <span class="account-dialog-icon">
-      <i class="ri-user-add-line"></i>
-    </span>
-
+    <button id="account-close" class="account-close icon-button" type="button" aria-label="بستن پنجره"><i class="ri-close-line"></i></button>
+    <span class="account-dialog-icon"><i class="ri-user-3-line"></i></span>
     <h2 id="account-dialog-title">حساب کاربری</h2>
-
-    <div class="account-tabs">
-      <button id="show-login" class="primary-button" type="button">ورود</button>
-      <button id="show-register" class="secondary-button" type="button">ثبت‌نام</button>
+    <div id="auth-view">
+      <div class="account-tabs"><button id="show-login" class="primary-button" type="button">ورود</button><button id="show-register" class="secondary-button" type="button">ثبت‌نام</button></div>
+      <form id="account-form">
+        <label for="account-email">ایمیل</label><input id="account-email" type="email" placeholder="ایمیل خود را وارد کن" required autocomplete="email">
+        <label for="account-password">رمز عبور</label><div class="password-wrap"><input id="account-password" type="password" placeholder="حداقل ۶ حرف" minlength="6" required autocomplete="current-password"><button id="toggle-password" type="button" class="password-toggle" aria-label="نمایش رمز"><i class="ri-eye-line"></i></button></div>
+        <div id="register-confirm-wrap" hidden><label for="account-confirm-password">تأیید رمز عبور</label><div class="password-wrap"><input id="account-confirm-password" type="password" placeholder="رمز را دوباره وارد کن" minlength="6" autocomplete="new-password"><button type="button" class="password-toggle" data-toggle-password="account-confirm-password" aria-label="نمایش رمز"><i class="ri-eye-line"></i></button></div></div>
+        <button id="account-submit" class="primary-button" type="submit">ورود</button>
+        <button id="forgot-password" class="account-link" type="button">فراموشی رمز عبور؟</button>
+        <p id="account-message" role="status"></p>
+      </form>
     </div>
-
-    <form id="account-form">
-      <label for="account-email">ایمیل</label>
-      <input id="account-email" type="email" placeholder="ایمیل خود را وارد کن" required autocomplete="email">
-
-      <label for="account-password">رمز عبور</label>
-      <input id="account-password" type="password" placeholder="حداقل ۶ حرف" minlength="6" required autocomplete="current-password">
-
-      <button id="account-submit" class="primary-button" type="submit">ورود</button>
-      <p id="account-message" role="status"></p>
-    </form>
-
-    <button id="account-logout" class="secondary-button" type="button" hidden>خروج از حساب</button>
+    <div id="account-management" hidden>
+      <p id="account-current-email" class="account-current-email"></p>
+      <div id="account-management-actions" class="account-management-actions">
+        <button type="button" data-account-action="info">اطلاعات حساب</button>
+        <button type="button" data-account-action="password">تغییر رمز عبور</button>
+        <button type="button" data-account-action="email">تغییر ایمیل</button>
+        <button type="button" data-account-action="delete" class="danger-account-action">حذف دائمی حساب</button>
+        <button id="account-logout" type="button">خروج از حساب</button>
+      </div>
+      <div id="account-settings-panel" hidden>
+        <button id="account-settings-back" class="account-settings-back" type="button"><i class="ri-arrow-right-line"></i> بازگشت به منوی حساب</button>
+        <h3 id="account-settings-title">تنظیمات حساب</h3>
+        <form id="account-settings-form">
+          <div id="account-settings-fields"></div>
+          <button class="primary-button" type="submit">ذخیره تغییرات</button>
+        </form>
+      </div>
+      <p id="account-message-management" role="status"></p>
+    </div>
   </div>
 </div>
 </body>
